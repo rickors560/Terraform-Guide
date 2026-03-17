@@ -1,0 +1,31 @@
+# -----------------------------------------------------------------------------
+# Transit Gateway Component - Example Variable Values
+# -----------------------------------------------------------------------------
+
+region       = "ap-south-1"
+project_name = "myproject"
+environment  = "dev"
+
+amazon_side_asn                = 64512
+auto_accept_shared_attachments = false
+
+vpc_attachments = {
+  # "shared-services" = {
+  #   vpc_id           = "vpc-0123456789abcdef0"
+  #   subnet_ids       = ["subnet-aaa", "subnet-bbb"]
+  #   route_table_type = "shared_services"
+  # }
+  # "app-vpc" = {
+  #   vpc_id           = "vpc-0123456789abcdef1"
+  #   subnet_ids       = ["subnet-ccc", "subnet-ddd"]
+  #   route_table_type = "isolated"
+  # }
+  # "egress-vpc" = {
+  #   vpc_id           = "vpc-0123456789abcdef2"
+  #   subnet_ids       = ["subnet-eee", "subnet-fff"]
+  #   route_table_type = "egress"
+  # }
+}
+
+share_with_organization = false
+share_with_account_ids  = []

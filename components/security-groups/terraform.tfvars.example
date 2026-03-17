@@ -1,0 +1,19 @@
+# -----------------------------------------------------------------------------
+# Security Groups Component - Example Variable Values
+# -----------------------------------------------------------------------------
+
+region       = "ap-south-1"
+project_name = "myproject"
+environment  = "dev"
+
+vpc_id = "vpc-0123456789abcdef0"
+
+app_port   = 8080
+db_port    = 5432
+cache_port = 6379
+
+bastion_security_group_id = ""
+create_bastion_sg         = false
+ssh_allowed_cidrs = [
+  # "203.0.113.0/24"
+]

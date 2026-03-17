@@ -1,0 +1,8 @@
+aws_region   = "us-east-1"
+project      = "myapp"
+environment  = "prod"
+zone_name    = "example.com"
+alb_dns_name = "myapp-prod-alb-123456789.us-east-1.elb.amazonaws.com"
+alb_zone_id  = "Z35SXDOTRQ7X7K"
+team         = "platform"
+cost_center  = "engineering"

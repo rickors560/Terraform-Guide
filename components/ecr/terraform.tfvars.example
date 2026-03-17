@@ -1,0 +1,16 @@
+# ECR Component — Example Variable Values
+# Copy this file to terraform.tfvars and adjust values for your environment.
+
+aws_region             = "ap-south-1"
+project_name           = "myapp"
+environment            = "dev"
+repository_name        = "app"
+image_tag_mutability   = "IMMUTABLE"
+scan_on_push           = true
+enhanced_scanning      = false
+kms_key_arn            = ""
+max_tagged_images      = 30
+max_dev_images         = 10
+untagged_image_expiry_days = 7
+cross_account_pull_ids = []
+enable_pull_through_cache = false

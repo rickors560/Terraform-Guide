@@ -1,0 +1,10 @@
+aws_region          = "us-east-1"
+project             = "myapp"
+environment         = "prod"
+vpc_id              = "vpc-0123456789abcdef0"
+subnet_ids          = ["subnet-0123456789abcdef0", "subnet-0123456789abcdef1"]
+security_group_ids  = ["sg-0123456789abcdef0"]
+ssl_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012"
+access_logs_bucket  = "my-alb-access-logs-bucket"
+team                = "platform"
+cost_center         = "engineering"

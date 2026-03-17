@@ -1,0 +1,9 @@
+aws_region         = "us-east-1"
+project            = "myapp"
+environment        = "dev"
+container_image    = "123456789012.dkr.ecr.us-east-1.amazonaws.com/myapp-dev-api:latest"
+subnet_ids         = ["subnet-0123456789abcdef0", "subnet-0123456789abcdef1"]
+security_group_ids = ["sg-0123456789abcdef0"]
+team               = "platform"
+cost_center        = "CC-1234"
+repository         = "https://github.com/example/terraform-guide"

@@ -1,0 +1,24 @@
+# -----------------------------------------------------------------------------
+# NACL Component - Example Variable Values
+# -----------------------------------------------------------------------------
+
+region       = "ap-south-1"
+project_name = "myproject"
+environment  = "dev"
+
+vpc_id   = "vpc-0123456789abcdef0"
+vpc_cidr = "10.0.0.0/16"
+
+public_subnet_ids   = ["subnet-pub1", "subnet-pub2", "subnet-pub3"]
+public_subnet_cidrs = ["10.0.0.0/24", "10.0.1.0/24", "10.0.2.0/24"]
+
+private_app_subnet_ids   = ["subnet-app1", "subnet-app2", "subnet-app3"]
+private_app_subnet_cidrs = ["10.0.10.0/24", "10.0.11.0/24", "10.0.12.0/24"]
+
+private_db_subnet_ids   = ["subnet-db1", "subnet-db2", "subnet-db3"]
+private_db_subnet_cidrs = ["10.0.20.0/24", "10.0.21.0/24", "10.0.22.0/24"]
+
+ssh_allowed_cidr = "0.0.0.0/0"
+app_port         = 8080
+db_port          = 5432
+cache_port       = 6379

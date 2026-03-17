@@ -1,0 +1,14 @@
+# -----------------------------------------------------------------------------
+# Internet Gateway Component - Example Variable Values
+# -----------------------------------------------------------------------------
+
+region       = "ap-south-1"
+project_name = "myproject"
+environment  = "dev"
+
+vpc_cidr       = "10.0.0.0/16"
+az_count       = 3
+subnet_newbits = 8
+
+ssh_allowed_cidr        = "0.0.0.0/0"
+flow_log_retention_days = 14

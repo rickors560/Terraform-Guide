@@ -1,0 +1,13 @@
+# ACM Component — Example Variable Values
+aws_region   = "ap-south-1"
+project_name = "myapp"
+environment  = "dev"
+domain_name  = "example.com"
+
+subject_alternative_names = [
+  "*.example.com",
+  "api.example.com",
+]
+
+route53_zone_id               = ""      # Set to your hosted zone ID for auto-validation
+create_cloudfront_certificate = false   # Set true if you need a CloudFront cert (us-east-1)

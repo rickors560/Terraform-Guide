@@ -1,0 +1,17 @@
+# SQS Component — Example Variable Values
+# Copy this file to terraform.tfvars and adjust values for your environment.
+
+aws_region                  = "ap-south-1"
+project_name                = "myapp"
+environment                 = "dev"
+queue_name                  = "main"
+fifo_queue                  = false
+delay_seconds               = 0
+max_message_size            = 262144
+message_retention_seconds   = 345600      # 4 days
+visibility_timeout_seconds  = 60
+receive_wait_time_seconds   = 20
+max_receive_count           = 3
+kms_key_arn                 = ""
+queue_depth_alarm_threshold = 1000
+message_age_alarm_threshold = 3600

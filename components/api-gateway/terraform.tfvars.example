@@ -1,0 +1,12 @@
+# API Gateway Component — Example Variable Values
+# Copy this file to terraform.tfvars and adjust values for your environment.
+
+aws_region             = "ap-south-1"
+project_name           = "myapp"
+environment            = "dev"
+endpoint_type          = "REGIONAL"
+require_api_key        = true
+xray_tracing_enabled   = false
+throttling_burst_limit = 50
+throttling_rate_limit  = 100
+usage_plan_quota_limit = 100000

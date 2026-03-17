@@ -1,0 +1,19 @@
+# -----------------------------------------------------------------------------
+# Budgets Component - Example Variable Values
+# -----------------------------------------------------------------------------
+
+region       = "ap-south-1"
+project_name = "myproject"
+environment  = "dev"
+
+monthly_budget_amount      = "1000"
+ec2_budget_amount          = "500"
+rds_budget_amount          = "300"
+data_transfer_budget_amount = "100"
+
+budget_notification_emails = [
+  # "finance@example.com",
+  # "devops@example.com"
+]
+
+budget_sns_topic_arns = []

@@ -1,0 +1,18 @@
+# Copy this file to terraform.tfvars and fill in your values
+# cp terraform.tfvars.example terraform.tfvars
+
+aws_region      = "ap-south-1"
+project_name    = "container-app"
+environment     = "dev"
+vpc_cidr        = "10.0.0.0/16"
+container_image = "nginx:alpine"   # Replace with your ECR image after first deploy
+container_port  = 80
+task_cpu        = 256
+task_memory     = 512
+desired_count   = 2
+min_count       = 1
+max_count       = 4
+db_instance_class = "db.t3.micro"
+db_name           = "appdb"
+db_username       = "appadmin"
+db_password       = "ChangeMe-Str0ng!Pass"   # Use a strong password

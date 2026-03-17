@@ -1,0 +1,24 @@
+# -----------------------------------------------------------------------------
+# CloudWatch Component - Example Variable Values
+# -----------------------------------------------------------------------------
+
+region       = "ap-south-1"
+project_name = "myproject"
+environment  = "dev"
+
+log_retention_days = 30
+kms_key_arn        = null
+
+# Leave empty for alarms across all instances
+ec2_instance_id = ""
+
+# Alarm thresholds
+cpu_threshold_high     = 75
+cpu_threshold_critical = 90
+memory_threshold       = 85
+disk_threshold         = 85
+error_rate_threshold   = 50
+http_5xx_threshold     = 20
+
+# SNS topics for alarm notifications
+alarm_sns_topic_arns = []

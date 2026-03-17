@@ -1,0 +1,13 @@
+# S3 Component — Example Variable Values
+# Copy this file to terraform.tfvars and adjust values for your environment.
+
+aws_region          = "ap-south-1"
+project_name        = "myapp"
+environment         = "dev"
+bucket_suffix       = "data"
+force_destroy       = false
+versioning_enabled  = true
+kms_key_arn         = ""                           # Leave empty for AES256
+cors_allowed_origins = []                          # e.g., ["https://example.com"]
+logging_target_bucket = ""                         # Set to a logging bucket name
+noncurrent_version_expiration_days = 90

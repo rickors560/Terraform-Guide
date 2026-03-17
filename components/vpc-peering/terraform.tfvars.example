@@ -1,0 +1,44 @@
+# -----------------------------------------------------------------------------
+# VPC Peering Component - Example Variable Values
+# -----------------------------------------------------------------------------
+
+region       = "ap-south-1"
+project_name = "myproject"
+environment  = "dev"
+
+requester_vpc_id   = "vpc-0123456789abcdef0"
+requester_vpc_cidr = "10.0.0.0/16"
+requester_route_table_ids = [
+  # "rtb-0123456789abcdef0",
+  # "rtb-0123456789abcdef1"
+]
+
+accepter_vpc_id   = "vpc-0123456789abcdef1"
+accepter_vpc_cidr = "10.1.0.0/16"
+accepter_route_table_ids = [
+  # "rtb-0123456789abcdef2",
+  # "rtb-0123456789abcdef3"
+]
+
+# Cross-account peering (leave empty for same-account)
+peer_account_id = ""
+peer_region     = ""
+
+# Security group rules
+requester_security_group_ids = {
+  # "allow-app-traffic" = {
+  #   security_group_id = "sg-0123456789abcdef0"
+  #   from_port         = 8080
+  #   to_port           = 8080
+  #   protocol          = "tcp"
+  # }
+}
+
+accepter_security_group_ids = {
+  # "allow-db-traffic" = {
+  #   security_group_id = "sg-0123456789abcdef1"
+  #   from_port         = 5432
+  #   to_port           = 5432
+  #   protocol          = "tcp"
+  # }
+}

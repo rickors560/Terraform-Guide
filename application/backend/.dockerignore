@@ -1,0 +1,17 @@
+target/
+!target/*.jar
+.git
+.gitignore
+.idea
+*.iml
+.vscode
+.settings
+.classpath
+.project
+*.md
+docker-compose*.yml
+logs/
+*.log
+.env
+.env.*
+node_modules/

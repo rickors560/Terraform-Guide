@@ -1,0 +1,17 @@
+{{- if .Values.frontend.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "myapp.frontend.fullname" . }}
+  labels:
+    {{- include "myapp.frontend.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.frontend.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.frontend.service.port }}
+      targetPort: http
+      protocol: TCP
+  selector:
+    {{- include "myapp.frontend.selectorLabels" . | nindent 4 }}
+{{- end }}

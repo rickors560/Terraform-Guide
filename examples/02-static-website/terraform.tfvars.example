@@ -1,0 +1,11 @@
+# Copy this file to terraform.tfvars and fill in your values
+# cp terraform.tfvars.example terraform.tfvars
+
+aws_region             = "ap-south-1"
+project_name           = "static-website"
+environment            = "prod"
+domain_name            = "example.com"              # Your Route53 hosted zone
+site_domain            = "example.com"              # Domain for the website
+bucket_name            = "my-unique-static-website-bucket-12345"  # Must be globally unique
+force_destroy_bucket   = true
+cloudfront_price_class = "PriceClass_200"

@@ -1,0 +1,8 @@
+aws_region                = "us-east-1"
+project                   = "myapp"
+environment               = "prod"
+domain_name               = "example.com"
+zone_id                   = "Z0123456789ABCDEFGHIJ"
+subject_alternative_names = ["*.example.com", "api.example.com"]
+team                      = "platform"
+cost_center               = "engineering"

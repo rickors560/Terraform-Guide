@@ -1,0 +1,15 @@
+# Copy this file to terraform.tfvars and fill in your values
+# cp terraform.tfvars.example terraform.tfvars
+
+primary_region     = "ap-south-1"
+secondary_region   = "us-east-1"
+project_name       = "multi-region"
+environment        = "prod"
+primary_vpc_cidr   = "10.0.0.0/16"
+secondary_vpc_cidr = "10.1.0.0/16"
+domain_name        = "example.com"           # Your Route53 hosted zone
+site_domain        = "app.example.com"       # Application domain
+db_instance_class  = "db.t3.micro"
+db_name            = "appdb"
+db_username        = "appadmin"
+db_password        = "ChangeMe-Str0ng!Pass"  # Use a strong password

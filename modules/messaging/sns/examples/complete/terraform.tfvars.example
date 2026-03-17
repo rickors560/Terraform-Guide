@@ -1,0 +1,7 @@
+aws_region            = "us-east-1"
+project               = "myapp"
+environment           = "prod"
+fulfillment_queue_arn = "arn:aws:sqs:us-east-1:123456789012:myapp-prod-fulfillment"
+analytics_queue_arn   = "arn:aws:sqs:us-east-1:123456789012:myapp-prod-analytics"
+webhook_url           = "https://api.example.com/webhooks/orders"
+cross_account_ids     = []

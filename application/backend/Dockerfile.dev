@@ -1,0 +1,34 @@
+# ============================================================
+# Development Dockerfile with hot-reload support
+# ============================================================
+FROM eclipse-temurin:21-jdk-jammy
+
+WORKDIR /app
+
+# Install useful dev tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    jq \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy Maven wrapper and POM for dependency caching
+COPY pom.xml ./
+COPY .mvn .mvn
+COPY mvnw ./
+RUN chmod +x mvnw
+
+# Download dependencies
+RUN ./mvnw dependency:go-offline -B
+
+# Copy source code
+COPY src ./src
+
+# Expose application port and debug port
+EXPOSE 8080 5005
+
+# Enable Spring Boot DevTools and remote debugging
+ENV JAVA_OPTS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 \
+    -Dspring.devtools.restart.enabled=true"
+
+# Use spring-boot:run for hot-reload support
+ENTRYPOINT ["sh", "-c", "./mvnw spring-boot:run -Dspring-boot.run.jvmArguments=\"$JAVA_OPTS\" -Dspring-boot.run.profiles=dev"]

@@ -1,0 +1,30 @@
+# -----------------------------------------------------------------------------
+# NAT Gateway Component - Example Variable Values
+# -----------------------------------------------------------------------------
+
+region       = "ap-south-1"
+project_name = "myproject"
+environment  = "dev"
+
+vpc_id = "vpc-0123456789abcdef0"
+
+public_subnet_ids = [
+  "subnet-pub-1a",
+  "subnet-pub-1b",
+  "subnet-pub-1c"
+]
+
+private_subnet_ids = [
+  "subnet-priv-1a",
+  "subnet-priv-1b",
+  "subnet-priv-1c"
+]
+
+# true = one NAT GW per AZ (HA), false = single shared NAT GW (cost savings)
+high_availability = true
+
+create_private_nat_gateway = false
+private_nat_subnet_id      = ""
+
+nat_bandwidth_alarm_threshold = 5368709120  # 5 GiB
+alarm_sns_topic_arns          = []

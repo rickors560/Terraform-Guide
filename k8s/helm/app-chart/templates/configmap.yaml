@@ -1,0 +1,23 @@
+{{- if .Values.backend.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "myapp.backend.fullname" . }}-config
+  labels:
+    {{- include "myapp.backend.labels" . | nindent 4 }}
+data:
+  SPRING_PROFILES_ACTIVE: {{ .Values.backend.config.springProfiles | quote }}
+  SERVER_PORT: {{ .Values.backend.config.serverPort | quote }}
+  SERVER_SHUTDOWN: {{ .Values.backend.config.serverShutdown | quote }}
+  SPRING_LIFECYCLE_TIMEOUT_PER_SHUTDOWN_PHASE: {{ .Values.backend.config.shutdownTimeout | quote }}
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics,prometheus"
+  MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: "always"
+  MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: "true"
+  MANAGEMENT_SERVER_PORT: {{ .Values.backend.config.managementPort | quote }}
+  LOGGING_LEVEL_ROOT: {{ .Values.backend.config.logLevel | quote }}
+  LOGGING_PATTERN_CONSOLE: {{ .Values.backend.config.logPattern | quote }}
+  APP_CORS_ALLOWED_ORIGINS: {{ .Values.backend.config.corsAllowedOrigins | quote }}
+  APP_CACHE_TTL: {{ .Values.backend.config.cacheTtl | quote }}
+  APP_PAGINATION_DEFAULT_SIZE: {{ .Values.backend.config.paginationDefaultSize | quote }}
+  APP_PAGINATION_MAX_SIZE: {{ .Values.backend.config.paginationMaxSize | quote }}
+{{- end }}

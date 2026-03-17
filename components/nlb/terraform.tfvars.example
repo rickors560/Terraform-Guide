@@ -1,0 +1,13 @@
+# NLB Component — Example Variable Values
+aws_region                       = "ap-south-1"
+project_name                     = "myapp"
+environment                      = "dev"
+vpc_id                           = "vpc-xxxxxxxxxxxxxxxxx"
+subnet_ids                       = ["subnet-pub-a", "subnet-pub-b"]
+internal                         = false
+enable_cross_zone_load_balancing = true
+listener_port                    = 80
+target_port                      = 80
+target_type                      = "instance"
+health_check_protocol            = "TCP"
+acm_certificate_arn              = ""

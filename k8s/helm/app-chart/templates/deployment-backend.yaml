@@ -1,0 +1,143 @@
+{{- if .Values.backend.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "myapp.backend.fullname" . }}
+  labels:
+    {{- include "myapp.backend.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.backend.autoscaling.enabled }}
+  replicas: {{ .Values.backend.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      {{- include "myapp.backend.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: {{ .Values.backend.config.managementPort | quote }}
+        prometheus.io/path: "/actuator/prometheus"
+      labels:
+        {{- include "myapp.backend.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "myapp.serviceAccountName" . }}
+      automountServiceAccountToken: true
+      terminationGracePeriodSeconds: 45
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: {{ .Values.backend.securityContext.runAsNonRoot }}
+        runAsUser: {{ .Values.backend.securityContext.runAsUser }}
+        runAsGroup: {{ .Values.backend.securityContext.runAsGroup }}
+        fsGroup: {{ .Values.backend.securityContext.fsGroup }}
+        seccompProfile:
+          type: RuntimeDefault
+      {{- if .Values.backend.topologySpreadConstraints.enabled }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              {{- include "myapp.backend.selectorLabels" . | nindent 14 }}
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              {{- include "myapp.backend.selectorLabels" . | nindent 14 }}
+      {{- end }}
+      {{- with .Values.backend.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.backend.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.backend.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: backend
+          image: {{ include "myapp.backend.image" . }}
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.backend.service.port }}
+              protocol: TCP
+            - name: management
+              containerPort: {{ .Values.backend.service.managementPort }}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "myapp.backend.fullname" . }}-config
+            {{- if .Values.secret.create }}
+            - secretRef:
+                name: {{ include "myapp.backend.fullname" . }}-secrets
+            {{- end }}
+          {{- with .Values.backend.extraEnv }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: {{ .Values.backend.securityContext.readOnlyRootFilesystem }}
+            runAsNonRoot: {{ .Values.backend.securityContext.runAsNonRoot }}
+            runAsUser: {{ .Values.backend.securityContext.runAsUser }}
+            capabilities:
+              drop:
+                - ALL
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: management
+            initialDelaySeconds: {{ .Values.backend.probes.startup.initialDelaySeconds }}
+            periodSeconds: {{ .Values.backend.probes.startup.periodSeconds }}
+            timeoutSeconds: {{ .Values.backend.probes.startup.timeoutSeconds }}
+            failureThreshold: {{ .Values.backend.probes.startup.failureThreshold }}
+            successThreshold: 1
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: management
+            initialDelaySeconds: {{ .Values.backend.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.backend.probes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.backend.probes.readiness.timeoutSeconds }}
+            failureThreshold: {{ .Values.backend.probes.readiness.failureThreshold }}
+            successThreshold: 1
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: management
+            initialDelaySeconds: {{ .Values.backend.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.backend.probes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.backend.probes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.backend.probes.liveness.failureThreshold }}
+            successThreshold: 1
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: app-logs
+              mountPath: /var/log/app
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 100Mi
+        - name: app-logs
+          emptyDir:
+            sizeLimit: 200Mi
+{{- end }}

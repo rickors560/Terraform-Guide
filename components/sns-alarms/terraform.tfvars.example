@@ -1,0 +1,19 @@
+# -----------------------------------------------------------------------------
+# SNS Alarms Component - Example Variable Values
+# -----------------------------------------------------------------------------
+
+region       = "ap-south-1"
+project_name = "myproject"
+environment  = "dev"
+
+critical_email_endpoints = [
+  # "oncall@example.com",
+  # "devops@example.com"
+]
+
+warning_email_endpoints = [
+  # "team@example.com"
+]
+
+rds_connections_threshold = 100
+alb_5xx_threshold         = 10

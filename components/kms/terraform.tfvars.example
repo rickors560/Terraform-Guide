@@ -1,0 +1,35 @@
+# -----------------------------------------------------------------------------
+# KMS Component - Example Variable Values
+# -----------------------------------------------------------------------------
+
+region       = "ap-south-1"
+project_name = "myproject"
+environment  = "dev"
+
+deletion_window_in_days = 30
+rotation_period_in_days = 365
+enable_multi_region     = false
+
+# Replace with actual IAM ARNs from your account
+key_admin_arns = [
+  # "arn:aws:iam::123456789012:role/admin-role"
+]
+
+key_user_arns = [
+  # "arn:aws:iam::123456789012:role/app-role",
+  # "arn:aws:iam::123456789012:role/ec2-instance-role"
+]
+
+allowed_service_principals = [
+  "logs.amazonaws.com",
+  "sns.amazonaws.com",
+  "sqs.amazonaws.com"
+]
+
+kms_grants = {
+  # "example-grant" = {
+  #   grantee_principal         = "arn:aws:iam::123456789012:role/app-role"
+  #   operations                = ["Encrypt", "Decrypt", "GenerateDataKey"]
+  #   encryption_context_subset = { "department" = "engineering" }
+  # }
+}

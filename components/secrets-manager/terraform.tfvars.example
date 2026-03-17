@@ -1,0 +1,33 @@
+# -----------------------------------------------------------------------------
+# Secrets Manager Component - Example Variable Values
+# -----------------------------------------------------------------------------
+
+region       = "ap-south-1"
+project_name = "myproject"
+environment  = "dev"
+
+recovery_window_in_days = 30
+
+# Database credentials (update before applying)
+db_username = "admin"
+db_password = "CHANGE_ME_BEFORE_APPLY"
+db_engine   = "postgresql"
+db_host     = "mydb.cluster-xxxx.ap-south-1.rds.amazonaws.com"
+db_port     = 5432
+db_name     = "appdb"
+
+# API credentials (update before applying)
+api_key    = "CHANGE_ME_BEFORE_APPLY"
+api_secret = "CHANGE_ME_BEFORE_APPLY"
+
+# Application secrets (update before applying)
+jwt_secret     = "CHANGE_ME_BEFORE_APPLY"
+encryption_key = "CHANGE_ME_BEFORE_APPLY"
+session_secret = "CHANGE_ME_BEFORE_APPLY"
+
+# Rotation
+enable_rotation = false
+rotation_days   = 30
+
+# Cross-account access
+cross_account_ids = []

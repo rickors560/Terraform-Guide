@@ -1,0 +1,14 @@
+# CloudFront Component — Example Variable Values
+aws_region            = "ap-south-1"
+project_name          = "myapp"
+environment           = "dev"
+default_root_object   = "index.html"
+price_class           = "PriceClass_200"
+origin_path           = ""
+origin_shield_enabled = false
+domain_aliases        = []       # e.g., ["cdn.example.com"]
+acm_certificate_arn   = ""       # Must be in us-east-1 for CloudFront
+custom_cache_policy   = false
+custom_error_page_404 = "/404.html"
+custom_error_page_500 = "/500.html"
+web_acl_arn           = ""

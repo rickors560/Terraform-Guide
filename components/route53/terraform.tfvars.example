@@ -1,0 +1,51 @@
+# Route53 Component — Example Variable Values
+aws_region   = "ap-south-1"
+project_name = "myapp"
+environment  = "dev"
+domain_name  = "example.com"
+
+a_records = {
+  "server.example.com" = {
+    records = ["203.0.113.10"]
+    ttl     = 300
+  }
+}
+
+alias_records = {
+  # "app.example.com" = {
+  #   dns_name               = "my-alb-1234.ap-south-1.elb.amazonaws.com"
+  #   zone_id                = "ZP97RAFLXXXXXF"
+  #   evaluate_target_health = true
+  # }
+}
+
+cname_records = {
+  "www.example.com" = {
+    value = "example.com"
+    ttl   = 300
+  }
+}
+
+mx_records = [
+  "10 mail.example.com",
+  "20 mail2.example.com",
+]
+
+txt_records = {
+  "example.com" = {
+    values = ["v=spf1 include:_spf.google.com ~all"]
+    ttl    = 3600
+  }
+  "_dmarc.example.com" = {
+    values = ["v=DMARC1; p=quarantine; rua=mailto:dmarc@example.com"]
+    ttl    = 3600
+  }
+}
+
+caa_records = [
+  "0 issue \"amazon.com\"",
+  "0 issue \"letsencrypt.org\"",
+]
+
+health_check_fqdn = ""     # e.g., "app.example.com"
+enable_dnssec     = false

@@ -1,0 +1,8 @@
+aws_region        = "us-east-1"
+project           = "myapp"
+environment       = "dev"
+oidc_provider_arn = "arn:aws:iam::123456789012:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/EXAMPLE"
+oidc_provider_url = "oidc.eks.us-east-1.amazonaws.com/id/EXAMPLE"
+team              = "platform"
+cost_center       = "CC-1234"
+repository        = "https://github.com/example/terraform-guide"

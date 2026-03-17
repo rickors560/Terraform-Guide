@@ -1,0 +1,21 @@
+# Lambda Component — Example Variable Values
+# Copy this file to terraform.tfvars and adjust values for your environment.
+
+aws_region           = "ap-south-1"
+project_name         = "myapp"
+environment          = "dev"
+memory_size          = 128
+timeout              = 30
+reserved_concurrency = -1
+log_level            = "INFO"
+log_retention_days   = 30
+tracing_mode         = "PassThrough"
+create_api_gateway   = true
+
+extra_environment_variables = {
+  # MY_VAR = "my-value"
+}
+
+# VPC configuration (leave empty for non-VPC Lambda)
+vpc_subnet_ids         = []
+vpc_security_group_ids = []

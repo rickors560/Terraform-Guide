@@ -1,0 +1,5 @@
+aws_region  = "us-east-1"
+project     = "myapp"
+environment = "prod"
+instance_id = "i-0123456789abcdef0"
+alarm_arns  = []

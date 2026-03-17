@@ -1,0 +1,10 @@
+aws_region                = "us-east-1"
+project                   = "myapp"
+environment               = "prod"
+aliases                   = ["cdn.example.com"]
+acm_certificate_arn       = "arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012"
+s3_bucket_regional_domain = "my-bucket.s3.us-east-1.amazonaws.com"
+api_origin_domain         = "api.example.com"
+logging_bucket            = "my-logs-bucket.s3.amazonaws.com"
+team                      = "platform"
+cost_center               = "engineering"

@@ -1,0 +1,7 @@
+aws_region                = "us-east-1"
+project                   = "myapp"
+environment               = "prod"
+process_order_lambda_arn  = "arn:aws:lambda:us-east-1:123456789012:function:process-order"
+order_queue_arn           = "arn:aws:sqs:us-east-1:123456789012:myapp-prod-orders"
+report_lambda_arn         = "arn:aws:lambda:us-east-1:123456789012:function:daily-report"
+dlq_arn                   = "arn:aws:sqs:us-east-1:123456789012:myapp-prod-eventbridge-dlq"

@@ -1,0 +1,25 @@
+# ECS Fargate Component — Example Variable Values
+# Copy this file to terraform.tfvars and adjust values for your environment.
+
+aws_region         = "ap-south-1"
+project_name       = "myapp"
+environment        = "dev"
+vpc_id             = "vpc-xxxxxxxxxxxxxxxxx"
+public_subnet_ids  = ["subnet-pub-a", "subnet-pub-b"]
+private_subnet_ids = ["subnet-priv-a", "subnet-priv-b"]
+container_image    = "nginx:latest"
+container_port     = 80
+task_cpu           = 256
+task_memory        = 512
+desired_count      = 2
+health_check_path  = "/"
+acm_certificate_arn = ""           # Set for HTTPS
+container_insights  = true
+fargate_spot_weight = 0
+log_retention_days  = 30
+
+# Auto-scaling
+autoscaling_min_capacity  = 2
+autoscaling_max_capacity  = 10
+autoscaling_cpu_target    = 70
+autoscaling_memory_target = 80

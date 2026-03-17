@@ -1,0 +1,157 @@
+---
+# Default deny all ingress and egress traffic in the namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: myapp
+  labels:
+    app.kubernetes.io/part-of: myapp
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+# Allow DNS egress for all pods
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: myapp
+  labels:
+    app.kubernetes.io/part-of: myapp
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to: []
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+# Frontend: allow ingress from ALB ingress controller only
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: frontend-allow-ingress
+  namespace: myapp
+  labels:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/component: frontend
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: frontend
+      app.kubernetes.io/component: frontend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: aws-load-balancer-controller
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+# Backend: allow ingress from frontend pods and ALB ingress controller
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-allow-ingress
+  namespace: myapp
+  labels:
+    app.kubernetes.io/name: backend
+    app.kubernetes.io/component: backend
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: backend
+      app.kubernetes.io/component: backend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: frontend
+              app.kubernetes.io/component: frontend
+      ports:
+        - protocol: TCP
+          port: 8080
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: aws-load-balancer-controller
+      ports:
+        - protocol: TCP
+          port: 8080
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 8081
+---
+# Backend: allow egress to external services (databases, APIs)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-allow-egress
+  namespace: myapp
+  labels:
+    app.kubernetes.io/name: backend
+    app.kubernetes.io/component: backend
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: backend
+      app.kubernetes.io/component: backend
+  policyTypes:
+    - Egress
+  egress:
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 5432
+        - protocol: TCP
+          port: 6379
+---
+# Frontend: allow egress to backend
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: frontend-allow-egress
+  namespace: myapp
+  labels:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/component: frontend
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: frontend
+      app.kubernetes.io/component: frontend
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: backend
+              app.kubernetes.io/component: backend
+      ports:
+        - protocol: TCP
+          port: 8080

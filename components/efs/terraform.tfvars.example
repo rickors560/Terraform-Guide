@@ -1,0 +1,19 @@
+# -----------------------------------------------------------------------------
+# EFS Component - Example Variable Values
+# -----------------------------------------------------------------------------
+
+region       = "ap-south-1"
+project_name = "myproject"
+environment  = "dev"
+
+vpc_id     = "vpc-0123456789abcdef0"
+subnet_ids = ["subnet-0123456789abcdef0", "subnet-0123456789abcdef1"]
+
+allowed_security_group_ids = ["sg-0123456789abcdef0"]
+allowed_cidr_blocks        = ["10.0.0.0/16"]
+
+performance_mode       = "generalPurpose"
+throughput_mode        = "elastic"
+provisioned_throughput = 256
+transition_to_ia       = "AFTER_30_DAYS"
+enable_backup          = true

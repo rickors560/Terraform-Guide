@@ -1,0 +1,47 @@
+# Staging environment overrides
+
+global:
+  environment: staging
+
+backend:
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+  config:
+    springProfiles: "staging"
+    logLevel: "INFO"
+    corsAllowedOrigins: "https://staging.myapp.example.com"
+  topologySpreadConstraints:
+    enabled: true
+
+frontend:
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 4
+
+ingress:
+  host: staging.myapp.example.com
+
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s

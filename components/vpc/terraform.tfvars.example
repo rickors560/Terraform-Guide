@@ -1,0 +1,10 @@
+# VPC Component — Example Variable Values
+# Copy this file to terraform.tfvars and adjust values for your environment.
+
+aws_region              = "ap-south-1"
+project_name            = "myapp"
+environment             = "dev"
+vpc_cidr                = "10.0.0.0/16"
+az_count                = 3
+single_nat_gateway      = true       # Set to false for prod (one NAT per AZ)
+flow_log_retention_days = 30

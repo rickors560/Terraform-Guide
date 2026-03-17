@@ -1,0 +1,9 @@
+# -----------------------------------------------------------------------------
+# Step Functions Component - Example Variable Values
+# -----------------------------------------------------------------------------
+
+region       = "ap-south-1"
+project_name = "myproject"
+environment  = "dev"
+
+log_retention_days = 30

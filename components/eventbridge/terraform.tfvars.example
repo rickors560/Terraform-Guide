@@ -1,0 +1,10 @@
+# EventBridge Component — Example Variable Values
+# Copy this file to terraform.tfvars and adjust values for your environment.
+
+aws_region             = "ap-south-1"
+project_name           = "myapp"
+environment            = "dev"
+event_source           = "com.myapp.events"
+event_detail_types     = ["OrderPlaced", "OrderShipped", "UserCreated"]
+schedule_expression    = "rate(1 hour)"
+archive_retention_days = 30

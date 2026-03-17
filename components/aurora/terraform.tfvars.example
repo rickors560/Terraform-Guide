@@ -1,0 +1,22 @@
+# Aurora Component — Example Variable Values
+# Copy this file to terraform.tfvars and adjust values for your environment.
+
+aws_region                   = "ap-south-1"
+project_name                 = "myapp"
+environment                  = "dev"
+vpc_id                       = "vpc-xxxxxxxxxxxxxxxxx"
+subnet_ids                   = ["subnet-aaa", "subnet-bbb", "subnet-ccc"]
+allowed_security_group_ids   = ["sg-xxxxxxxxxxxxxxxxx"]
+allowed_cidr_blocks          = []
+engine_version               = "16.4"
+instance_class               = "db.r6g.large"
+instance_count               = 2
+database_name                = "appdb"
+master_username              = "dbadmin"
+backup_retention_period      = 7
+kms_key_arn                  = ""
+enhanced_monitoring_interval = 60
+enable_autoscaling           = false
+autoscaling_min_capacity     = 1
+autoscaling_max_capacity     = 5
+autoscaling_target_cpu       = 70

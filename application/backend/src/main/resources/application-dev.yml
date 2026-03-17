@@ -1,0 +1,41 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:myappdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    locations: classpath:db/migration
+
+# Actuator - expose all endpoints in dev
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+
+# Springdoc - enable in dev
+springdoc:
+  swagger-ui:
+    enabled: true
+    try-it-out-enabled: true
+
+# Logging
+logging:
+  level:
+    root: INFO
+    com.myapp.api: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE

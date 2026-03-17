@@ -1,0 +1,9 @@
+aws_region         = "us-east-1"
+project            = "myapp"
+environment        = "dev"
+subnet_ids         = ["subnet-0123456789abcdef0", "subnet-0123456789abcdef1"]
+security_group_ids = ["sg-0123456789abcdef0"]
+auth_token         = "your-strong-auth-token-here"
+team               = "platform"
+cost_center        = "CC-1234"
+repository         = "https://github.com/example/terraform-guide"

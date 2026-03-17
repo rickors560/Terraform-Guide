@@ -1,0 +1,32 @@
+# -----------------------------------------------------------------------------
+# WAF Component - Example Variable Values
+# -----------------------------------------------------------------------------
+
+region       = "ap-south-1"
+project_name = "myproject"
+environment  = "dev"
+
+waf_scope  = "REGIONAL"
+rate_limit = 2000
+
+blocked_ip_addresses = [
+  # "192.168.1.100/32",
+  # "10.0.0.0/8"
+]
+
+allowed_ip_addresses = [
+  # "203.0.113.0/24"
+]
+
+blocked_country_codes = [
+  # "CN", "RU"
+]
+
+# Set to ALB ARN to associate WAF with load balancer
+alb_arn = ""
+
+log_retention_days         = 30
+blocked_requests_threshold = 1000
+rate_limit_alarm_threshold = 500
+
+alarm_sns_topic_arns = []

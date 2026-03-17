@@ -1,0 +1,6 @@
+aws_region  = "us-east-1"
+project     = "myapp"
+environment = "prod"
+vpc_id      = "vpc-0123456789abcdef0"
+team        = "platform"
+cost_center = "engineering"

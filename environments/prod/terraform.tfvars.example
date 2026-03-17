@@ -1,0 +1,69 @@
+# Production environment configuration
+project_name = "myapp"
+environment  = "prod"
+aws_region   = "ap-south-1"
+
+# Tagging
+team        = "platform"
+cost_center = "engineering-prod"
+repository  = "https://github.com/myorg/terraform-guide"
+
+# VPC
+vpc_cidr           = "10.2.0.0/16"
+availability_zones = ["ap-south-1a", "ap-south-1b", "ap-south-1c"]
+
+# EKS - General (On-Demand)
+eks_cluster_version        = "1.29"
+eks_general_instance_types = ["t3.large"]
+eks_general_min_size       = 3
+eks_general_max_size       = 10
+eks_general_desired_size   = 3
+eks_node_disk_size         = 50
+
+# EKS - Spot (Mixed instances)
+eks_spot_instance_types = ["t3.large", "t3.xlarge", "t3a.large", "t3a.xlarge"]
+eks_spot_min_size       = 0
+eks_spot_max_size       = 10
+eks_spot_desired_size   = 2
+
+# RDS
+rds_instance_class          = "db.r6g.large"
+rds_allocated_storage       = 100
+rds_max_allocated_storage   = 500
+rds_engine_version          = "16.3"
+rds_database_name           = "myapp_prod"
+rds_master_username         = "dbadmin"
+rds_backup_retention_period = 35
+
+# Redis
+redis_node_type               = "cache.r6g.large"
+redis_engine_version          = "7.1"
+redis_num_node_groups         = 2
+redis_replicas_per_node_group = 1
+
+# S3
+s3_force_destroy = false
+
+# ECR
+ecr_repositories = ["myapp-api", "myapp-web", "myapp-worker"]
+
+# Domain / DNS
+domain_name    = "myapp.example.com"
+route53_zone_id = ""
+
+# Monitoring
+alarm_notification_email = "ops-team@example.com"
+alarm_critical_email     = "oncall@example.com"
+
+# WAF
+waf_rate_limit = 2000
+
+# Budgets
+monthly_budget_amount     = "1000"
+budget_notification_email = "finance@example.com"
+
+# CloudTrail
+cloudtrail_retention_days = 365
+
+# Additional tags
+additional_tags = {}

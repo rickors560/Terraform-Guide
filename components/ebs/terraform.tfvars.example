@@ -1,0 +1,21 @@
+# -----------------------------------------------------------------------------
+# EBS Component - Example Variable Values
+# -----------------------------------------------------------------------------
+
+region            = "ap-south-1"
+project_name      = "myproject"
+environment       = "dev"
+availability_zone = "ap-south-1a"
+
+# Leave empty to create volumes without attaching
+ec2_instance_id = ""
+
+app_data_volume_size       = 50
+app_data_volume_type       = "gp3"
+app_data_volume_iops       = 3000
+app_data_volume_throughput = 125
+logs_volume_size           = 20
+
+snapshot_time               = "03:00"
+snapshot_retain_count       = 7
+weekly_snapshot_retain_count = 4

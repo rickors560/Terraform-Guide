@@ -1,0 +1,6 @@
+aws_region     = "us-east-1"
+project        = "myapp"
+environment    = "prod"
+finance_email  = "finance@example.com"
+ops_email      = "ops@example.com"
+sns_topic_arns = []

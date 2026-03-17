@@ -1,0 +1,13 @@
+# -----------------------------------------------------------------------------
+# SES Component - Example Variable Values
+# -----------------------------------------------------------------------------
+
+region       = "ap-south-1"
+project_name = "myproject"
+environment  = "dev"
+
+domain_name            = "example.com"
+create_route53_records = false
+route53_zone_name      = "example.com"
+dmarc_policy           = "quarantine"
+dmarc_report_email     = "dmarc@example.com"

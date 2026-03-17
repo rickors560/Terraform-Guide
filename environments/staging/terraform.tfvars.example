@@ -1,0 +1,50 @@
+# Staging environment configuration
+project_name = "myapp"
+environment  = "staging"
+aws_region   = "ap-south-1"
+
+# Tagging
+team        = "platform"
+cost_center = "engineering-staging"
+repository  = "https://github.com/myorg/terraform-guide"
+
+# VPC
+vpc_cidr           = "10.1.0.0/16"
+availability_zones = ["ap-south-1a", "ap-south-1b"]
+
+# EKS
+eks_cluster_version     = "1.29"
+eks_node_instance_types = ["t3.medium"]
+eks_node_min_size       = 2
+eks_node_max_size       = 4
+eks_node_desired_size   = 2
+eks_node_disk_size      = 30
+
+# RDS
+rds_instance_class          = "db.t3.small"
+rds_allocated_storage       = 50
+rds_engine_version          = "16.3"
+rds_database_name           = "myapp_staging"
+rds_master_username         = "dbadmin"
+rds_backup_retention_period = 14
+
+# Redis
+redis_node_type          = "cache.t3.small"
+redis_engine_version     = "7.1"
+redis_num_cache_clusters = 2
+
+# S3
+s3_force_destroy = false
+
+# ECR
+ecr_repositories         = ["myapp-api", "myapp-web", "myapp-worker"]
+ecr_image_tag_mutability = "IMMUTABLE"
+
+# Domain
+domain_name = "myapp.example.com"
+
+# Monitoring
+alarm_notification_email = "staging-alerts@example.com"
+
+# Additional tags
+additional_tags = {}

@@ -1,0 +1,21 @@
+# Global environment configuration
+project_name = "myapp"
+aws_region   = "ap-south-1"
+domain_name  = "myapp.example.com"
+
+# Tagging
+team        = "platform"
+cost_center = "infrastructure"
+repository  = "https://github.com/myorg/terraform-guide"
+
+# IAM session durations (seconds)
+admin_max_session_duration     = 3600
+developer_max_session_duration = 3600
+readonly_max_session_duration  = 3600
+
+# Trusted AWS account IDs for cross-account role assumption
+# Leave empty to trust the current account only
+trusted_account_ids = []
+
+# Additional tags applied to all resources
+additional_tags = {}

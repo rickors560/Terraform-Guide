@@ -1,0 +1,164 @@
+# Default values for myapp (dev-like settings)
+
+global:
+  environment: dev
+  imageRegistry: ""
+  imagePullSecrets: []
+
+namespace: myapp
+
+backend:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: myapp/backend
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  serviceAccount:
+    create: true
+    name: backend
+    annotations: {}
+    # eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/myapp-backend-irsa-role
+  service:
+    type: ClusterIP
+    port: 8080
+    managementPort: 8081
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+    scaleDown:
+      stabilizationWindowSeconds: 300
+    scaleUp:
+      stabilizationWindowSeconds: 30
+  pdb:
+    enabled: true
+    minAvailable: 1
+  config:
+    springProfiles: "dev"
+    serverPort: "8080"
+    serverShutdown: "graceful"
+    shutdownTimeout: "30s"
+    managementPort: "8081"
+    logLevel: "DEBUG"
+    logPattern: "%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n"
+    corsAllowedOrigins: "http://localhost:3000"
+    cacheTtl: "300"
+    paginationDefaultSize: "20"
+    paginationMaxSize: "100"
+  probes:
+    startup:
+      initialDelaySeconds: 10
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 30
+    readiness:
+      initialDelaySeconds: 0
+      periodSeconds: 10
+      timeoutSeconds: 3
+      failureThreshold: 3
+    liveness:
+      initialDelaySeconds: 0
+      periodSeconds: 15
+      timeoutSeconds: 3
+      failureThreshold: 3
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    readOnlyRootFilesystem: true
+  topologySpreadConstraints:
+    enabled: true
+  affinity: {}
+  nodeSelector: {}
+  tolerations: []
+  extraEnv: []
+
+frontend:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: myapp/frontend
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8080
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 128Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 70
+  probes:
+    startup:
+      initialDelaySeconds: 5
+      periodSeconds: 3
+      timeoutSeconds: 2
+      failureThreshold: 10
+    readiness:
+      initialDelaySeconds: 0
+      periodSeconds: 10
+      timeoutSeconds: 2
+      failureThreshold: 3
+    liveness:
+      initialDelaySeconds: 0
+      periodSeconds: 15
+      timeoutSeconds: 2
+      failureThreshold: 3
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 101
+    runAsGroup: 101
+    readOnlyRootFilesystem: true
+  affinity: {}
+  nodeSelector: {}
+  tolerations: []
+
+ingress:
+  enabled: true
+  className: alb
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:ACCOUNT_ID:certificate/CERTIFICATE_ID
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/group.name: myapp
+  host: dev.myapp.example.com
+  tls: []
+
+secret:
+  create: false
+  data: {}
+  # dbUrl: ""
+  # dbUsername: ""
+  # dbPassword: ""
+  # redisUrl: ""
+  # apiKey: ""
+
+monitoring:
+  enabled: false
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    path: /actuator/prometheus

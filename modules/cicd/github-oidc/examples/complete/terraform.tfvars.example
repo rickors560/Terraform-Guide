@@ -1,0 +1,4 @@
+aws_region  = "us-east-1"
+project     = "myapp"
+environment = "prod"
+github_org  = "my-organization"

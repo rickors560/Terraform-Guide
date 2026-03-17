@@ -1,0 +1,7 @@
+aws_region   = "us-east-1"
+project      = "myapp"
+environment  = "dev"
+cluster_name = "myapp-dev-eks"
+team         = "platform"
+cost_center  = "CC-1234"
+repository   = "https://github.com/example/terraform-guide"

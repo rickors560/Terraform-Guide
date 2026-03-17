@@ -1,0 +1,14 @@
+# SNS Component — Example Variable Values
+# Copy this file to terraform.tfvars and adjust values for your environment.
+
+aws_region             = "ap-south-1"
+project_name           = "myapp"
+environment            = "dev"
+topic_name             = "notifications"
+fifo_topic             = false
+kms_key_arn            = ""
+email_subscribers      = ["admin@example.com"]
+sqs_subscriber_arns    = []          # Add SQS queue ARNs to subscribe
+lambda_subscriber_arns = []          # Add Lambda function ARNs to subscribe
+raw_message_delivery   = true
+filter_policy          = ""          # e.g., "{\"event_type\":[\"order_placed\"]}"

@@ -1,0 +1,40 @@
+# Dev environment overrides
+
+global:
+  environment: dev
+
+backend:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  autoscaling:
+    enabled: false
+  config:
+    springProfiles: "dev"
+    logLevel: "DEBUG"
+    corsAllowedOrigins: "http://localhost:3000,https://dev.myapp.example.com"
+  topologySpreadConstraints:
+    enabled: false
+
+frontend:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 128Mi
+  autoscaling:
+    enabled: false
+
+ingress:
+  host: dev.myapp.example.com
+
+monitoring:
+  enabled: false

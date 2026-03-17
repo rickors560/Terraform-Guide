@@ -1,0 +1,6 @@
+# Copy this file to terraform.tfvars and fill in your values
+# cp terraform.tfvars.example terraform.tfvars
+
+aws_region   = "ap-south-1"
+project_name = "serverless-api"
+environment  = "dev"

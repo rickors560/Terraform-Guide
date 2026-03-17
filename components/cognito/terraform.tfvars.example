@@ -1,0 +1,23 @@
+# -----------------------------------------------------------------------------
+# Cognito Component - Example Variable Values
+# -----------------------------------------------------------------------------
+
+region       = "ap-south-1"
+project_name = "myproject"
+environment  = "dev"
+
+password_minimum_length = 12
+mfa_configuration       = "OPTIONAL"
+advanced_security_mode  = "AUDIT"
+
+callback_urls = ["http://localhost:3000/callback"]
+logout_urls   = ["http://localhost:3000"]
+
+access_token_validity_hours = 1
+id_token_validity_hours     = 1
+refresh_token_validity_days = 30
+
+# Lambda trigger ARNs (leave empty to skip)
+pre_sign_up_lambda_arn          = ""
+post_confirmation_lambda_arn    = ""
+pre_token_generation_lambda_arn = ""

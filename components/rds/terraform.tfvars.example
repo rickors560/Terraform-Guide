@@ -1,0 +1,22 @@
+# RDS Component — Example Variable Values
+# Copy this file to terraform.tfvars and adjust values for your environment.
+
+aws_region                  = "ap-south-1"
+project_name                = "myapp"
+environment                 = "dev"
+vpc_id                      = "vpc-xxxxxxxxxxxxxxxxx"
+subnet_ids                  = ["subnet-aaa", "subnet-bbb", "subnet-ccc"]
+allowed_security_group_ids  = ["sg-xxxxxxxxxxxxxxxxx"]
+allowed_cidr_blocks         = []
+engine_version              = "16.4"
+instance_class              = "db.t3.micro"
+allocated_storage           = 20
+max_allocated_storage       = 100
+db_name                     = "appdb"
+db_master_username          = "dbadmin"
+db_port                     = 5432
+multi_az                    = false          # Set true for prod
+backup_retention_period     = 7
+performance_insights_enabled = true
+kms_key_arn                 = ""
+max_connections_alarm_threshold = 50

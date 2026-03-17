@@ -1,0 +1,14 @@
+# Copy this file to terraform.tfvars and fill in your values
+# cp terraform.tfvars.example terraform.tfvars
+
+aws_region         = "ap-south-1"
+project_name       = "hello-world"
+environment        = "dev"
+vpc_cidr           = "10.0.0.0/16"
+public_subnet_cidr = "10.0.1.0/24"
+instance_type      = "t3.micro"
+allowed_ssh_cidr   = "0.0.0.0/0"   # Restrict to your IP in production, e.g. "203.0.113.5/32"
+
+# Generate a key pair: ssh-keygen -t ed25519 -f ~/.ssh/hello-world-key -N ""
+# Then paste the public key below:
+ssh_public_key = "ssh-ed25519 AAAA...your-public-key-here"

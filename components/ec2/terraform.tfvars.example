@@ -1,0 +1,16 @@
+# EC2 Component — Example Variable Values
+# Copy this file to terraform.tfvars and adjust values for your environment.
+
+aws_region         = "ap-south-1"
+project_name       = "myapp"
+environment        = "dev"
+vpc_id             = "vpc-xxxxxxxxxxxxxxxxx"
+subnet_id          = "subnet-xxxxxxxxxxxxxxxxx"
+instance_type      = "t3.micro"
+ami_id             = ""                    # Leave empty for latest Amazon Linux 2023
+key_pair_name      = "my-key-pair"
+ssh_allowed_cidr   = "203.0.113.0/24"     # Replace with your IP/CIDR
+root_volume_size   = 20
+data_volume_size   = 0                     # Set > 0 for additional EBS volume
+assign_elastic_ip  = true
+detailed_monitoring = false

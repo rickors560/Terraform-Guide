@@ -1,0 +1,14 @@
+aws_region  = "us-east-1"
+project     = "myapp"
+environment = "prod"
+vpc_cidr    = "10.0.0.0/16"
+
+availability_zones = [
+  "us-east-1a",
+  "us-east-1b",
+  "us-east-1c",
+]
+
+team        = "platform"
+cost_center = "engineering"
+repository  = "https://github.com/example/terraform-guide"

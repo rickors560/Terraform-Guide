@@ -1,0 +1,71 @@
+====================================================================
+  {{ include "myapp.fullname" . }} has been deployed successfully!
+====================================================================
+
+Environment: {{ .Values.global.environment }}
+Namespace:   {{ .Release.Namespace }}
+
+{{- if .Values.ingress.enabled }}
+
+Application URLs:
+  Frontend: https://{{ .Values.ingress.host }}/
+  Backend API: https://{{ .Values.ingress.host }}/api
+{{- end }}
+
+Components deployed:
+{{- if .Values.backend.enabled }}
+  - Backend ({{ .Values.backend.replicaCount }} replicas)
+    Image: {{ include "myapp.backend.image" . }}
+    Service: {{ include "myapp.backend.fullname" . }}:{{ .Values.backend.service.port }}
+    Spring Profile: {{ .Values.backend.config.springProfiles }}
+    {{- if .Values.backend.autoscaling.enabled }}
+    HPA: {{ .Values.backend.autoscaling.minReplicas }}-{{ .Values.backend.autoscaling.maxReplicas }} replicas
+    {{- end }}
+{{- end }}
+{{- if .Values.frontend.enabled }}
+  - Frontend ({{ .Values.frontend.replicaCount }} replicas)
+    Image: {{ include "myapp.frontend.image" . }}
+    Service: {{ include "myapp.frontend.fullname" . }}:{{ .Values.frontend.service.port }}
+    {{- if .Values.frontend.autoscaling.enabled }}
+    HPA: {{ .Values.frontend.autoscaling.minReplicas }}-{{ .Values.frontend.autoscaling.maxReplicas }} replicas
+    {{- end }}
+{{- end }}
+
+Useful commands:
+
+  # Check pod status
+  kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+  # View backend logs
+  kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=backend -f
+
+  # View frontend logs
+  kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=frontend -f
+
+  # Check HPA status
+  kubectl get hpa -n {{ .Release.Namespace }}
+
+  # Port-forward backend for local testing
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "myapp.backend.fullname" . }} 8080:{{ .Values.backend.service.port }}
+
+  # Port-forward frontend for local testing
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "myapp.frontend.fullname" . }} 3000:{{ .Values.frontend.service.port }}
+
+  # Check ingress status
+  kubectl get ingress -n {{ .Release.Namespace }}
+
+{{- if not .Values.secret.create }}
+
+NOTE: No secrets were created by this release. Ensure secrets are provisioned
+via external-secrets-operator, sealed-secrets, or manually before the backend
+pods can start successfully.
+{{- end }}
+
+{{- if .Values.monitoring.enabled }}
+
+Monitoring:
+  Prometheus metrics are exposed at :{{ .Values.backend.config.managementPort }}/actuator/prometheus
+  {{- if .Values.monitoring.serviceMonitor.enabled }}
+  A ServiceMonitor has been created for Prometheus Operator autodiscovery.
+  {{- end }}
+{{- end }}

@@ -1,0 +1,30 @@
+# -----------------------------------------------------------------------------
+# SSM Parameter Store Component - Example Variable Values
+# -----------------------------------------------------------------------------
+
+region       = "ap-south-1"
+project_name = "myproject"
+environment  = "dev"
+
+# Application configuration
+log_level       = "INFO"
+app_port        = 8080
+max_connections = 100
+feature_flags   = ["dark-mode", "notifications", "beta-api"]
+allowed_origins = ["http://localhost:3000", "https://app.example.com"]
+
+# Database configuration
+db_host     = "mydb.cluster-xxxx.ap-south-1.rds.amazonaws.com"
+db_port     = 5432
+db_name     = "appdb"
+db_username = "admin"
+db_password = "CHANGE_ME_BEFORE_APPLY"
+
+# Cache configuration
+cache_host       = "my-cache.xxxx.0001.aps1.cache.amazonaws.com"
+cache_port       = 6379
+cache_auth_token = "CHANGE_ME_BEFORE_APPLY"
+
+# External services
+external_api_key      = "CHANGE_ME_BEFORE_APPLY"
+external_api_base_url = "https://api.example.com/v1"

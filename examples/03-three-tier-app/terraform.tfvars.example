@@ -1,0 +1,15 @@
+# Copy this file to terraform.tfvars and fill in your values
+# cp terraform.tfvars.example terraform.tfvars
+
+aws_region        = "ap-south-1"
+project_name      = "three-tier"
+environment       = "dev"
+vpc_cidr          = "10.0.0.0/16"
+app_instance_type = "t3.micro"
+asg_min           = 1
+asg_max           = 4
+asg_desired       = 2
+db_instance_class = "db.t3.micro"
+db_name           = "appdb"
+db_username       = "appadmin"
+db_password       = "ChangeMe-Str0ng!Pass"   # Use a strong password in production
