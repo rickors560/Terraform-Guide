@@ -1,0 +1,254 @@
+###############################################################################
+# Security Scanning
+#
+# Runs on a weekly cron (Monday 05:00 UTC) and on every pull request.
+# Performs Trivy container scanning, Checkov IaC scanning, tfsec analysis,
+# dependency review, and uploads SARIF results to GitHub Security tab.
+###############################################################################
+name: "Security Scan"
+
+on:
+  schedule:
+    - cron: "0 5 * * 1"
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: read
+  actions: read
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Trivy — container image and filesystem scanning
+  # ---------------------------------------------------------------------------
+  trivy:
+    name: "Trivy Vulnerability Scan"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-fs-results.sarif"
+          severity: "CRITICAL,HIGH"
+          exit-code: "0"
+
+      - name: Upload Trivy filesystem SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-fs-results.sarif
+          category: "trivy-filesystem"
+        continue-on-error: true
+
+      - name: Run Trivy config scan (IaC misconfigurations)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "config"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-config-results.sarif"
+          severity: "CRITICAL,HIGH,MEDIUM"
+          exit-code: "0"
+
+      - name: Upload Trivy config SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-config-results.sarif
+          category: "trivy-config"
+        continue-on-error: true
+
+      - name: Run Trivy scan on backend Dockerfile
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "application/backend"
+          format: "table"
+          severity: "CRITICAL,HIGH"
+          exit-code: "0"
+
+      - name: Run Trivy scan on frontend Dockerfile
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "application/frontend"
+          format: "table"
+          severity: "CRITICAL,HIGH"
+          exit-code: "0"
+
+  # ---------------------------------------------------------------------------
+  # Checkov — IaC security and compliance
+  # ---------------------------------------------------------------------------
+  checkov:
+    name: "Checkov IaC Scan"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Checkov on Terraform
+        id: checkov-tf
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: .
+          framework: terraform
+          output_format: cli,sarif
+          output_file_path: console,checkov-terraform.sarif
+          soft_fail: true
+          download_external_modules: true
+          skip_check: "CKV_AWS_144,CKV_AWS_145"
+
+      - name: Upload Checkov Terraform SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: checkov-terraform.sarif
+          category: "checkov-terraform"
+        continue-on-error: true
+
+      - name: Run Checkov on Kubernetes manifests
+        id: checkov-k8s
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: k8s/
+          framework: kubernetes
+          output_format: cli,sarif
+          output_file_path: console,checkov-kubernetes.sarif
+          soft_fail: true
+
+      - name: Upload Checkov Kubernetes SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: checkov-kubernetes.sarif
+          category: "checkov-kubernetes"
+        continue-on-error: true
+
+      - name: Run Checkov on Dockerfiles
+        id: checkov-docker
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: application/
+          framework: dockerfile
+          output_format: cli,sarif
+          output_file_path: console,checkov-dockerfile.sarif
+          soft_fail: true
+
+      - name: Upload Checkov Dockerfile SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: checkov-dockerfile.sarif
+          category: "checkov-dockerfile"
+        continue-on-error: true
+
+  # ---------------------------------------------------------------------------
+  # tfsec — Terraform-specific security analysis
+  # ---------------------------------------------------------------------------
+  tfsec:
+    name: "tfsec Security Analysis"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run tfsec on modules
+        uses: aquasecurity/tfsec-sarif-action@v0.1.4
+        with:
+          sarif_file: tfsec-modules.sarif
+          working_directory: modules/
+          soft_fail: true
+
+      - name: Upload tfsec modules SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: tfsec-modules.sarif
+          category: "tfsec-modules"
+        continue-on-error: true
+
+      - name: Run tfsec on environments
+        uses: aquasecurity/tfsec-sarif-action@v0.1.4
+        with:
+          sarif_file: tfsec-environments.sarif
+          working_directory: environments/
+          soft_fail: true
+
+      - name: Upload tfsec environments SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: tfsec-environments.sarif
+          category: "tfsec-environments"
+        continue-on-error: true
+
+      - name: Run tfsec on components
+        uses: aquasecurity/tfsec-sarif-action@v0.1.4
+        with:
+          sarif_file: tfsec-components.sarif
+          working_directory: components/
+          soft_fail: true
+
+      - name: Upload tfsec components SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: tfsec-components.sarif
+          category: "tfsec-components"
+        continue-on-error: true
+
+  # ---------------------------------------------------------------------------
+  # Dependency review (PR only)
+  # ---------------------------------------------------------------------------
+  dependency-review:
+    name: "Dependency Review"
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Dependency review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          deny-licenses: "GPL-3.0, AGPL-3.0"
+        continue-on-error: true
+
+  # ---------------------------------------------------------------------------
+  # Summary
+  # ---------------------------------------------------------------------------
+  security-summary:
+    name: "Security Scan Summary"
+    runs-on: ubuntu-latest
+    needs: [trivy, checkov, tfsec]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## Security Scan Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Scanner | Status |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---------|--------|" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "${{ needs.trivy.result }}" = "success" ]; then
+            echo "| Trivy | :white_check_mark: Passed |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "| Trivy | :warning: Issues Found |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [ "${{ needs.checkov.result }}" = "success" ]; then
+            echo "| Checkov | :white_check_mark: Passed |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "| Checkov | :warning: Issues Found |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [ "${{ needs.tfsec.result }}" = "success" ]; then
+            echo "| tfsec | :white_check_mark: Passed |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "| tfsec | :warning: Issues Found |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Review findings in the **Security** tab of this repository." >> "$GITHUB_STEP_SUMMARY"

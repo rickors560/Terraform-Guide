@@ -1,0 +1,227 @@
+###############################################################################
+# Terraform Drift Detection — Daily at 06:00 UTC
+#
+# Runs `terraform plan` in detect-only mode for every environment, captures
+# any drift, and alerts via Slack and email when resources have changed
+# outside of Terraform.
+###############################################################################
+name: "Terraform Drift Detection"
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to check (leave empty for all)"
+        required: false
+        type: choice
+        options:
+          - all
+          - dev
+          - staging
+          - prod
+        default: all
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  TF_VERSION: "1.7.5"
+  TF_PLUGIN_CACHE_DIR: "${{ github.workspace }}/.terraform.d/plugin-cache"
+  AWS_REGION: "us-east-1"
+
+jobs:
+  drift-detect:
+    name: "Drift Detection (${{ matrix.environment }})"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [dev, staging, prod]
+        include:
+          - environment: dev
+            working_directory: environments/dev
+            aws_role_arn: AWS_ROLE_ARN_DEV
+          - environment: staging
+            working_directory: environments/staging
+            aws_role_arn: AWS_ROLE_ARN_STAGING
+          - environment: prod
+            working_directory: environments/prod
+            aws_role_arn: AWS_ROLE_ARN_PROD
+    # When triggered manually for a single environment, skip others
+    if: >-
+      github.event_name == 'schedule' ||
+      github.event.inputs.environment == 'all' ||
+      github.event.inputs.environment == matrix.environment
+    defaults:
+      run:
+        working-directory: ${{ matrix.working_directory }}
+    outputs:
+      dev_drift: ${{ steps.detect.outputs.drift_detected }}
+      staging_drift: ${{ steps.detect.outputs.drift_detected }}
+      prod_drift: ${{ steps.detect.outputs.drift_detected }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets[matrix.aws_role_arn] }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: terraform-drift-${{ matrix.environment }}-${{ github.run_id }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Create plugin cache directory
+        run: mkdir -p "$TF_PLUGIN_CACHE_DIR"
+
+      - name: Terraform Init
+        run: terraform init -input=false
+
+      - name: Terraform Plan (drift detect)
+        id: detect
+        run: |
+          set +e
+          terraform plan -input=false -no-color -detailed-exitcode 2>&1 | tee drift_output.txt
+          EXIT_CODE=$?
+          set -e
+
+          if [ "$EXIT_CODE" -eq 2 ]; then
+            echo "drift_detected=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::Drift detected in ${{ matrix.environment }} environment!"
+          elif [ "$EXIT_CODE" -eq 0 ]; then
+            echo "drift_detected=false" >> "$GITHUB_OUTPUT"
+            echo "No drift detected in ${{ matrix.environment }} environment."
+          else
+            echo "drift_detected=error" >> "$GITHUB_OUTPUT"
+            echo "::error::Terraform plan failed for ${{ matrix.environment }} with exit code $EXIT_CODE"
+            exit 1
+          fi
+
+      - name: Generate drift report
+        if: always()
+        run: |
+          mkdir -p "${{ github.workspace }}/drift-reports"
+          REPORT_FILE="${{ github.workspace }}/drift-reports/${{ matrix.environment }}-drift-report.txt"
+          {
+            echo "=========================================="
+            echo " Drift Detection Report"
+            echo " Environment: ${{ matrix.environment }}"
+            echo " Date:        $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo " Run ID:      ${{ github.run_id }}"
+            echo "=========================================="
+            echo ""
+            if [ "${{ steps.detect.outputs.drift_detected }}" = "true" ]; then
+              echo "STATUS: DRIFT DETECTED"
+            elif [ "${{ steps.detect.outputs.drift_detected }}" = "false" ]; then
+              echo "STATUS: NO DRIFT"
+            else
+              echo "STATUS: ERROR DURING DETECTION"
+            fi
+            echo ""
+            echo "------------------------------------------"
+            echo " Terraform Plan Output"
+            echo "------------------------------------------"
+            cat drift_output.txt
+          } > "$REPORT_FILE"
+
+      - name: Upload drift report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: drift-report-${{ matrix.environment }}
+          path: drift-reports/${{ matrix.environment }}-drift-report.txt
+          retention-days: 30
+
+      - name: Alert Slack on drift
+        if: steps.detect.outputs.drift_detected == 'true'
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": ":warning: *Infrastructure drift detected in `${{ matrix.environment }}`*\n\nResources have changed outside of Terraform. Review the drift report and reconcile.\n\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
+
+      - name: Send email alert on drift
+        if: steps.detect.outputs.drift_detected == 'true'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "[DRIFT] Infrastructure drift detected in ${{ matrix.environment }}"
+          to: ${{ secrets.ALERT_EMAIL_RECIPIENTS }}
+          from: "Terraform Drift Detection <noreply@example.com>"
+          body: |
+            Infrastructure drift has been detected in the ${{ matrix.environment }} environment.
+
+            Resources have been modified outside of Terraform and the actual state
+            no longer matches the desired configuration.
+
+            Action Required:
+            - Review the drift report at:
+              ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            - Either update the Terraform configuration to match or run terraform apply
+              to reconcile.
+
+            This is an automated alert from the Terraform Drift Detection workflow.
+        continue-on-error: true
+
+  # ---------------------------------------------------------------------------
+  # Summary job – aggregate results
+  # ---------------------------------------------------------------------------
+  drift-summary:
+    name: "Drift Summary"
+    runs-on: ubuntu-latest
+    needs: [drift-detect]
+    if: always()
+    steps:
+      - name: Download all drift reports
+        uses: actions/download-artifact@v4
+        with:
+          path: drift-reports
+          pattern: drift-report-*
+          merge-multiple: true
+
+      - name: Generate combined summary
+        run: |
+          echo "## Drift Detection Summary - $(date -u '+%Y-%m-%d')" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Environment | Status |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------------|--------|" >> "$GITHUB_STEP_SUMMARY"
+
+          for report in drift-reports/*-drift-report.txt; do
+            if [ -f "$report" ]; then
+              env_name=$(basename "$report" | sed 's/-drift-report\.txt//')
+              if grep -q "STATUS: DRIFT DETECTED" "$report"; then
+                echo "| $env_name | :warning: Drift Detected |" >> "$GITHUB_STEP_SUMMARY"
+              elif grep -q "STATUS: NO DRIFT" "$report"; then
+                echo "| $env_name | :white_check_mark: No Drift |" >> "$GITHUB_STEP_SUMMARY"
+              else
+                echo "| $env_name | :x: Error |" >> "$GITHUB_STEP_SUMMARY"
+              fi
+            fi
+          done
+
+      - name: Notify Slack with summary (no drift)
+        if: >-
+          needs.drift-detect.result == 'success'
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": ":white_check_mark: *Daily drift detection completed*\nAll environments are in sync with Terraform state.\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true

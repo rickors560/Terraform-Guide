@@ -1,0 +1,390 @@
+###############################################################################
+# Terraform Plan — Runs on pull requests that touch *.tf files
+#
+# Jobs:
+#   1. fmt-check        – terraform fmt -check -recursive
+#   2. validate         – terraform validate (per environment)
+#   3. tflint           – TFLint static analysis
+#   4. checkov          – Checkov IaC security scan
+#   5. plan (matrix)    – terraform plan for dev, staging, prod
+#   6. infracost        – Cost estimation posted as PR comment
+###############################################################################
+name: "Terraform Plan"
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "**.tf"
+      - "**.tfvars"
+      - "modules/**"
+      - "environments/**"
+      - "components/**"
+
+concurrency:
+  group: terraform-plan-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+  security-events: write
+
+env:
+  TF_VERSION: "1.7.5"
+  TF_PLUGIN_CACHE_DIR: "${{ github.workspace }}/.terraform.d/plugin-cache"
+  AWS_REGION: "us-east-1"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1 – Format check
+  # ---------------------------------------------------------------------------
+  fmt-check:
+    name: "Terraform Format Check"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform fmt -check -recursive -diff
+        continue-on-error: true
+
+      - name: Post format check result to PR
+        if: steps.fmt.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `#### Terraform Format Check :x: \`failed\`
+
+            Some files are not properly formatted. Run \`terraform fmt -recursive\` locally and push the changes.
+
+            *Triggered by @${{ github.actor }}, commit: \`${{ github.sha }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
+
+      - name: Fail if format check failed
+        if: steps.fmt.outcome == 'failure'
+        run: exit 1
+
+  # ---------------------------------------------------------------------------
+  # Job 2 – Validate
+  # ---------------------------------------------------------------------------
+  validate:
+    name: "Terraform Validate (${{ matrix.environment }})"
+    runs-on: ubuntu-latest
+    needs: [fmt-check]
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [dev, staging, prod]
+        include:
+          - environment: dev
+            working_directory: environments/dev
+          - environment: staging
+            working_directory: environments/staging
+          - environment: prod
+            working_directory: environments/prod
+    defaults:
+      run:
+        working-directory: ${{ matrix.working_directory }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Create plugin cache directory
+        run: mkdir -p "$TF_PLUGIN_CACHE_DIR"
+
+      - name: Cache Terraform plugins
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.TF_PLUGIN_CACHE_DIR }}
+          key: terraform-plugins-${{ matrix.environment }}-${{ hashFiles('**/.terraform.lock.hcl') }}
+          restore-keys: |
+            terraform-plugins-${{ matrix.environment }}-
+
+      - name: Terraform Init
+        run: terraform init -backend=false
+
+      - name: Terraform Validate
+        run: terraform validate
+
+  # ---------------------------------------------------------------------------
+  # Job 3 – TFLint
+  # ---------------------------------------------------------------------------
+  tflint:
+    name: "TFLint"
+    runs-on: ubuntu-latest
+    needs: [fmt-check]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: "v0.50.3"
+
+      - name: Init TFLint
+        run: tflint --init
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run TFLint on modules
+        run: |
+          exit_code=0
+          for dir in $(find modules -type f -name "*.tf" -exec dirname {} \; | sort -u); do
+            echo "::group::Linting $dir"
+            tflint --chdir="$dir" --format compact || exit_code=1
+            echo "::endgroup::"
+          done
+          for dir in $(find environments -type f -name "*.tf" -exec dirname {} \; | sort -u); do
+            echo "::group::Linting $dir"
+            tflint --chdir="$dir" --format compact || exit_code=1
+            echo "::endgroup::"
+          done
+          exit $exit_code
+
+  # ---------------------------------------------------------------------------
+  # Job 4 – Checkov security scan
+  # ---------------------------------------------------------------------------
+  checkov:
+    name: "Checkov Security Scan"
+    runs-on: ubuntu-latest
+    needs: [fmt-check]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Checkov
+        id: checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: .
+          framework: terraform
+          output_format: cli,sarif
+          output_file_path: console,results.sarif
+          soft_fail: true
+          download_external_modules: true
+
+      - name: Upload SARIF to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
+        continue-on-error: true
+
+  # ---------------------------------------------------------------------------
+  # Job 5 – Terraform Plan (matrix across environments)
+  # ---------------------------------------------------------------------------
+  plan:
+    name: "Terraform Plan (${{ matrix.environment }})"
+    runs-on: ubuntu-latest
+    needs: [validate, tflint, checkov]
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [dev, staging, prod]
+        include:
+          - environment: dev
+            working_directory: environments/dev
+            aws_role_arn: AWS_ROLE_ARN_DEV
+          - environment: staging
+            working_directory: environments/staging
+            aws_role_arn: AWS_ROLE_ARN_STAGING
+          - environment: prod
+            working_directory: environments/prod
+            aws_role_arn: AWS_ROLE_ARN_PROD
+    defaults:
+      run:
+        working-directory: ${{ matrix.working_directory }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets[matrix.aws_role_arn] }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: terraform-plan-${{ matrix.environment }}-${{ github.run_id }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: true
+
+      - name: Create plugin cache directory
+        run: mkdir -p "$TF_PLUGIN_CACHE_DIR"
+
+      - name: Cache Terraform plugins
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.TF_PLUGIN_CACHE_DIR }}
+          key: terraform-plugins-${{ matrix.environment }}-${{ hashFiles('**/.terraform.lock.hcl') }}
+          restore-keys: |
+            terraform-plugins-${{ matrix.environment }}-
+
+      - name: Terraform Init
+        id: init
+        run: terraform init -input=false
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan -input=false -no-color -out=tfplan 2>&1 | tee plan_output.txt
+          echo "plan_exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      - name: Save plan output
+        if: always()
+        run: |
+          {
+            echo "PLAN_OUTPUT<<PLAN_DELIMITER"
+            head -c 60000 plan_output.txt
+            echo ""
+            echo "PLAN_DELIMITER"
+          } >> "$GITHUB_ENV"
+
+      - name: Post plan output to PR
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const planOutput = process.env.PLAN_OUTPUT || 'No plan output captured.';
+            const environment = '${{ matrix.environment }}';
+            const exitCode = '${{ steps.plan.outcome }}';
+            const icon = exitCode === 'success' ? ':white_check_mark:' : ':x:';
+
+            const body = `#### Terraform Plan for \`${environment}\` ${icon}
+
+            <details>
+            <summary>Show Plan Output</summary>
+
+            \`\`\`hcl
+            ${planOutput}
+            \`\`\`
+
+            </details>
+
+            *Triggered by @${{ github.actor }}, commit: \`${{ github.event.pull_request.head.sha }}\`*`;
+
+            // Find and update existing comment or create new one
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const marker = `Terraform Plan for \`${environment}\``;
+            const existing = comments.find(c => c.body.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+
+      - name: Upload plan artifact
+        if: steps.plan.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-${{ matrix.environment }}
+          path: ${{ matrix.working_directory }}/tfplan
+          retention-days: 5
+
+      - name: Fail if plan failed
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+
+  # ---------------------------------------------------------------------------
+  # Job 6 – Infracost cost estimate
+  # ---------------------------------------------------------------------------
+  infracost:
+    name: "Infracost Cost Estimate"
+    runs-on: ubuntu-latest
+    needs: [validate]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          path: base
+
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v3
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      - name: Generate Infracost config for current branch
+        run: |
+          cat > /tmp/infracost-current.yml <<'ICEOF'
+          version: 0.1
+          projects:
+            - path: environments/dev
+              name: dev
+            - path: environments/staging
+              name: staging
+            - path: environments/prod
+              name: prod
+          ICEOF
+
+      - name: Generate Infracost baseline (base branch)
+        run: |
+          infracost breakdown \
+            --config-file=/tmp/infracost-current.yml \
+            --path=base \
+            --format=json \
+            --out-file=/tmp/infracost-base.json
+        continue-on-error: true
+
+      - name: Generate Infracost diff
+        run: |
+          infracost diff \
+            --config-file=/tmp/infracost-current.yml \
+            --compare-to=/tmp/infracost-base.json \
+            --format=json \
+            --out-file=/tmp/infracost-diff.json
+        continue-on-error: true
+
+      - name: Post Infracost comment
+        run: |
+          infracost comment github \
+            --path=/tmp/infracost-diff.json \
+            --repo=${{ github.repository }} \
+            --github-token=${{ secrets.GITHUB_TOKEN }} \
+            --pull-request=${{ github.event.pull_request.number }} \
+            --behavior=update \
+            --tag=infracost
+        continue-on-error: true

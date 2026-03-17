@@ -1,0 +1,92 @@
+repos:
+  # Terraform formatting and validation
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.96.1
+    hooks:
+      - id: terraform_fmt
+        name: Terraform fmt
+        description: Rewrites Terraform configuration files to canonical format.
+        args:
+          - --args=-recursive
+
+      - id: terraform_validate
+        name: Terraform validate
+        description: Validates Terraform configuration files.
+        args:
+          - --hook-config=--retry-once-with-cleanup=true
+
+      - id: terraform_tflint
+        name: TFLint
+        description: Lints Terraform files with TFLint.
+        args:
+          - --args=--config=__GIT_WORKING_DIR__/.tflint.hcl
+
+      - id: terraform_docs
+        name: Terraform docs
+        description: Generates documentation from Terraform modules.
+        args:
+          - --hook-config=--path-to-file=README.md
+          - --hook-config=--add-to-existing-file=true
+          - --hook-config=--create-file-if-not-exist=true
+          - --args=--config=.terraform-docs.yml
+
+      - id: terraform_checkov
+        name: Checkov
+        description: Runs Checkov security scanner on Terraform files.
+        args:
+          - --args=--quiet
+          - --args=--compact
+          - --args=--framework terraform
+
+  # Detect secrets
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        name: Detect secrets
+        description: Detects high-entropy strings and known secret patterns.
+        args:
+          - --baseline
+          - .secrets.baseline
+        exclude: |
+          (?x)^(
+            .*\.lock\.hcl|
+            .*\.terraform/.*
+          )$
+
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        name: Trim trailing whitespace
+        args:
+          - --markdown-linebreak-ext=md
+
+      - id: end-of-file-fixer
+        name: Fix end of file
+
+      - id: check-yaml
+        name: Check YAML syntax
+        args:
+          - --allow-multiple-documents
+        exclude: |
+          (?x)^(
+            k8s/.*\.ya?ml
+          )$
+
+      - id: check-json
+        name: Check JSON syntax
+
+      - id: check-merge-conflict
+        name: Check for merge conflicts
+
+      - id: check-added-large-files
+        name: Check for large files
+        args:
+          - --maxkb=1024
+
+      - id: no-commit-to-branch
+        name: Protect main branch
+        args:
+          - --branch=main

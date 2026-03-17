@@ -1,0 +1,305 @@
+###############################################################################
+# Terraform Apply — Runs when changes are pushed/merged to main
+#
+# Deploys across three environments in order:
+#   1. dev     – automatic
+#   2. staging – automatic (after dev succeeds)
+#   3. prod    – manual approval required
+#
+# Includes Slack notifications and state-lock verification.
+###############################################################################
+name: "Terraform Apply"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**.tf"
+      - "**.tfvars"
+      - "modules/**"
+      - "environments/**"
+      - "components/**"
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  TF_VERSION: "1.7.5"
+  TF_PLUGIN_CACHE_DIR: "${{ github.workspace }}/.terraform.d/plugin-cache"
+  AWS_REGION: "us-east-1"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Dev – automatic deployment
+  # ---------------------------------------------------------------------------
+  deploy-dev:
+    name: "Deploy to Dev"
+    runs-on: ubuntu-latest
+    environment: dev
+    outputs:
+      plan_exit_code: ${{ steps.plan.outputs.exitcode }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_DEV }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: terraform-apply-dev-${{ github.run_id }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Create plugin cache directory
+        run: mkdir -p "$TF_PLUGIN_CACHE_DIR"
+
+      - name: Cache Terraform plugins
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.TF_PLUGIN_CACHE_DIR }}
+          key: terraform-plugins-dev-${{ hashFiles('**/.terraform.lock.hcl') }}
+          restore-keys: terraform-plugins-dev-
+
+      - name: Terraform Init
+        working-directory: environments/dev
+        run: terraform init -input=false
+
+      - name: Verify state lock table
+        working-directory: environments/dev
+        run: |
+          echo "Verifying DynamoDB state lock table exists..."
+          LOCK_TABLE=$(grep -oP 'dynamodb_table\s*=\s*"\K[^"]+' backend.tf || echo "terraform-state-lock")
+          if aws dynamodb describe-table --table-name "$LOCK_TABLE" --region "$AWS_REGION" > /dev/null 2>&1; then
+            echo "State lock table '$LOCK_TABLE' is available."
+          else
+            echo "::warning::State lock table '$LOCK_TABLE' not found. Proceeding without lock verification."
+          fi
+
+      - name: Terraform Plan
+        id: plan
+        working-directory: environments/dev
+        run: |
+          terraform plan -input=false -no-color -out=tfplan -detailed-exitcode 2>&1 | tee plan_output.txt
+          echo "exitcode=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      - name: Terraform Apply
+        if: steps.plan.outputs.exitcode == '2'
+        working-directory: environments/dev
+        run: terraform apply -input=false -auto-approve tfplan
+
+      - name: Skip apply (no changes)
+        if: steps.plan.outputs.exitcode == '0'
+        run: echo "No changes detected for dev environment. Skipping apply."
+
+      - name: Notify Slack on success
+        if: success()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": ":white_check_mark: *Terraform Apply succeeded for dev*\nCommit: `${{ github.sha }}`\nAuthor: ${{ github.actor }}\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
+
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": ":x: *Terraform Apply FAILED for dev*\nCommit: `${{ github.sha }}`\nAuthor: ${{ github.actor }}\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
+
+  # ---------------------------------------------------------------------------
+  # Staging – automatic after dev succeeds
+  # ---------------------------------------------------------------------------
+  deploy-staging:
+    name: "Deploy to Staging"
+    runs-on: ubuntu-latest
+    needs: [deploy-dev]
+    environment: staging
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_STAGING }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: terraform-apply-staging-${{ github.run_id }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Create plugin cache directory
+        run: mkdir -p "$TF_PLUGIN_CACHE_DIR"
+
+      - name: Cache Terraform plugins
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.TF_PLUGIN_CACHE_DIR }}
+          key: terraform-plugins-staging-${{ hashFiles('**/.terraform.lock.hcl') }}
+          restore-keys: terraform-plugins-staging-
+
+      - name: Terraform Init
+        working-directory: environments/staging
+        run: terraform init -input=false
+
+      - name: Verify state lock table
+        working-directory: environments/staging
+        run: |
+          echo "Verifying DynamoDB state lock table exists..."
+          LOCK_TABLE=$(grep -oP 'dynamodb_table\s*=\s*"\K[^"]+' backend.tf || echo "terraform-state-lock")
+          if aws dynamodb describe-table --table-name "$LOCK_TABLE" --region "$AWS_REGION" > /dev/null 2>&1; then
+            echo "State lock table '$LOCK_TABLE' is available."
+          else
+            echo "::warning::State lock table '$LOCK_TABLE' not found. Proceeding without lock verification."
+          fi
+
+      - name: Terraform Plan
+        id: plan
+        working-directory: environments/staging
+        run: |
+          terraform plan -input=false -no-color -out=tfplan -detailed-exitcode 2>&1 | tee plan_output.txt
+          echo "exitcode=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      - name: Terraform Apply
+        if: steps.plan.outputs.exitcode == '2'
+        working-directory: environments/staging
+        run: terraform apply -input=false -auto-approve tfplan
+
+      - name: Skip apply (no changes)
+        if: steps.plan.outputs.exitcode == '0'
+        run: echo "No changes detected for staging environment. Skipping apply."
+
+      - name: Notify Slack on success
+        if: success()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": ":white_check_mark: *Terraform Apply succeeded for staging*\nCommit: `${{ github.sha }}`\nAuthor: ${{ github.actor }}\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
+
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": ":x: *Terraform Apply FAILED for staging*\nCommit: `${{ github.sha }}`\nAuthor: ${{ github.actor }}\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
+
+  # ---------------------------------------------------------------------------
+  # Prod – requires manual approval via GitHub environment protection
+  # ---------------------------------------------------------------------------
+  deploy-prod:
+    name: "Deploy to Production"
+    runs-on: ubuntu-latest
+    needs: [deploy-staging]
+    environment:
+      name: prod
+      url: https://prod.example.com
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: terraform-apply-prod-${{ github.run_id }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Create plugin cache directory
+        run: mkdir -p "$TF_PLUGIN_CACHE_DIR"
+
+      - name: Cache Terraform plugins
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.TF_PLUGIN_CACHE_DIR }}
+          key: terraform-plugins-prod-${{ hashFiles('**/.terraform.lock.hcl') }}
+          restore-keys: terraform-plugins-prod-
+
+      - name: Terraform Init
+        working-directory: environments/prod
+        run: terraform init -input=false
+
+      - name: Verify state lock table
+        working-directory: environments/prod
+        run: |
+          echo "Verifying DynamoDB state lock table exists..."
+          LOCK_TABLE=$(grep -oP 'dynamodb_table\s*=\s*"\K[^"]+' backend.tf || echo "terraform-state-lock")
+          if aws dynamodb describe-table --table-name "$LOCK_TABLE" --region "$AWS_REGION" > /dev/null 2>&1; then
+            echo "State lock table '$LOCK_TABLE' is available."
+          else
+            echo "::error::State lock table '$LOCK_TABLE' not found. Aborting production deployment."
+            exit 1
+          fi
+
+      - name: Terraform Plan
+        id: plan
+        working-directory: environments/prod
+        run: |
+          terraform plan -input=false -no-color -out=tfplan -detailed-exitcode 2>&1 | tee plan_output.txt
+          echo "exitcode=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      - name: Terraform Apply
+        if: steps.plan.outputs.exitcode == '2'
+        working-directory: environments/prod
+        run: terraform apply -input=false -auto-approve tfplan
+
+      - name: Skip apply (no changes)
+        if: steps.plan.outputs.exitcode == '0'
+        run: echo "No changes detected for prod environment. Skipping apply."
+
+      - name: Notify Slack on success
+        if: success()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": ":rocket: *Terraform Apply succeeded for PRODUCTION*\nCommit: `${{ github.sha }}`\nAuthor: ${{ github.actor }}\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
+
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": ":rotating_light: *Terraform Apply FAILED for PRODUCTION*\nCommit: `${{ github.sha }}`\nAuthor: ${{ github.actor }}\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true

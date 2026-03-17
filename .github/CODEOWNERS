@@ -1,0 +1,39 @@
+# =============================================================================
+# CODEOWNERS — Defines code ownership for automated review assignment
+#
+# Order matters: later rules take precedence over earlier ones.
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+# =============================================================================
+
+# Default — catch-all for files not matched by more specific rules
+*                               @devops-team
+
+# Terraform files (modules, environments, components)
+*.tf                            @infra-team
+*.tfvars                        @infra-team
+modules/                        @infra-team
+environments/                   @infra-team
+components/                     @infra-team
+
+# Application source code
+application/                    @dev-team
+application/backend/            @dev-team
+application/frontend/           @dev-team
+
+# Kubernetes manifests and Helm charts
+k8s/                            @platform-team
+
+# CI/CD workflows and GitHub configuration
+.github/                        @devops-team
+.github/workflows/              @devops-team
+
+# Scripts
+scripts/                        @devops-team
+
+# Documentation
+docs/                           @all-contributors
+*.md                            @all-contributors
+
+# Security-sensitive files require both infra and devops review
+environments/prod/              @infra-team @devops-team
+.github/workflows/terraform-apply.yml  @infra-team @devops-team
